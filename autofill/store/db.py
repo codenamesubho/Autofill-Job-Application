@@ -13,7 +13,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-SCHEMA_VERSION = 1
+# 2: v2 generic-path schema - adds site_memory, questions.widget and
+# answer_cache.jd_dependent, drops applications.ats. CREATE TABLE IF NOT EXISTS
+# will not add columns to a database created at version 1, so a stale db is a
+# real (if currently unlikely) failure mode. There is no migration runner yet;
+# the version is recorded so the mismatch is detectable rather than silent.
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS applications (

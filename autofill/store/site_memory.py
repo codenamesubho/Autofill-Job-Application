@@ -37,9 +37,10 @@ class SiteMemory(BaseModel):
     def is_trusted(self) -> bool:
         """Replay remembered strategies only while they keep working.
 
-        One failure is noise - a slow page, a transient overlay. A record that
-        fails as often as it succeeds is worse than no record, because it sends
-        the run down a path that then has to be unwound.
+        A record that fails as often as it succeeds is worse than no record,
+        because it sends the run down a path that then has to be unwound. So
+        ties lose: a fresh record must earn its first success before it is
+        replayed, and one failure against one success retires it.
         """
         return self.successes > self.failures
 
