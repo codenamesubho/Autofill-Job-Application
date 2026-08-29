@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "autofill"
+version = "0.1.0"
+description = "Agentic job-application autofill that stops before Submit"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "pydantic-settings>=2.2",
+    "typer>=0.12",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+browser = ["playwright>=1.44"]
+ingest = ["pdfplumber>=0.11", "python-docx>=1.1"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+autofill = "autofill.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["autofill"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

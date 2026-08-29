@@ -1,0 +1,77 @@
+# Questions the agent must never invent an answer for (PLAN.md section 2.5).
+# Matching one of these escalates to the human regardless of model confidence.
+# This file is the single source of truth - no `if` statements in the resolver.
+
+version: 1
+
+# Matched against canonical_key when the extractor assigns one.
+canonical_keys:
+  - salary_expectation
+  - current_salary
+  - years_of_experience
+  - degree
+  - gpa
+  - certifications
+  - employment_dates
+  - work_authorization
+  - visa_status
+  - requires_sponsorship
+  - criminal_history
+  - background_check_consent
+  - drug_test_consent
+  - reference_name
+  - reference_email
+  - reference_phone
+
+# Case-insensitive substring match against the question label.
+label_patterns:
+  - salary
+  - compensation
+  - ctc
+  - "expected pay"
+  - "desired pay"
+  - "years of experience"
+  - "how many years"
+  - gpa
+  - "grade point"
+  - "date of graduation"
+  - "graduation date"
+  - "criminal"
+  - "felony"
+  - "convicted"
+  - "background check"
+  - "drug test"
+  - "authorized to work"
+  - "require sponsorship"
+  - "visa status"
+  - "work permit"
+  - "i certify"
+  - "i attest"
+  - "i declare"
+  - "under penalty of perjury"
+  - "reference"
+
+# Any field type in this list is never auto-checked. A consent checkbox is a
+# legally-binding attestation; only a human ticks one.
+field_types:
+  - consent
+
+# EEO / demographic fields. Default: leave blank for the human.
+# Set eeo.autofill_from_profile to true only if you have declared explicit
+# values under `eeo:` in data/profile.yaml and want them filled.
+eeo:
+  autofill_from_profile: false
+  label_patterns:
+    - race
+    - ethnicity
+    - gender
+    - "sexual orientation"
+    - veteran
+    - disability
+    - "protected veteran"
+    - "hispanic or latino"
+
+# Values that are always allowed through even if a pattern above matches,
+# because profile.yaml declares them explicitly and deterministically.
+profile_overrides_allowed:
+  - notice_period

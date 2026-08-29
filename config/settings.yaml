@@ -1,0 +1,15 @@
+# Overlays the defaults in autofill/config.py. AUTOFILL_* env vars win over this.
+
+review_mode: attended
+headless: false
+workers: 1
+
+# Conservative thresholds to start with - see PLAN.md section 8.5.
+extract_confidence_threshold: 0.75
+answer_confidence_threshold: 0.80
+autofill_enum_threshold: 0.85
+
+max_loop_iterations: 8
+per_job_timeout_seconds: 600
+per_job_token_budget: 60000
+per_domain_min_delay_seconds: 2.0
