@@ -44,14 +44,14 @@ def test_init_does_not_clobber_an_edited_profile(isolated):
     assert "me@example.com" in profile.read_text()
 
 
-@pytest.mark.parametrize("command", ["ingest", "run", "review", "resume"])
+@pytest.mark.parametrize("command", ["ingest", "corpus", "run", "review", "resume"])
 def test_unimplemented_commands_exit_nonzero(isolated, command):
     result = runner.invoke(app, [command])
     assert result.exit_code == 2
     assert "not implemented" in result.output
 
 
-def test_status_does_not_import_playwright():
+def test_status_does_not_import_playwright(tmp_path):
     """The M0 gate: `autofill status` must run with no browser installed."""
     code = (
         "import sys; from typer.testing import CliRunner; from autofill.cli import app; "
@@ -64,7 +64,7 @@ def test_status_does_not_import_playwright():
         capture_output=True,
         text=True,
         cwd=root,
-        env={"PATH": "/usr/bin:/bin", "AUTOFILL_DB_PATH": "/tmp/autofill-import-test.db"},
+        env={"PATH": "/usr/bin:/bin", "AUTOFILL_DB_PATH": str(tmp_path / "state.db")},
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
 

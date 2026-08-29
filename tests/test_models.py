@@ -2,10 +2,13 @@ from autofill.models import (
     Answer,
     AnswerSource,
     FieldType,
+    ForwardControl,
     FormSchema,
     JobTarget,
+    Locator,
     Option,
     Question,
+    WidgetKind,
 )
 
 
@@ -14,7 +17,7 @@ def make_question(**kw) -> Question:
         field_id="f1",
         label="Email address",
         type=FieldType.EMAIL,
-        selector={"strategy": "css", "value": "#email"},
+        locator={"strategy": "css", "value": "#email"},
     )
     base.update(kw)
     return Question(**base)

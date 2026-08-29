@@ -8,18 +8,19 @@ See [PLAN.md](PLAN.md) for the full design.
 ## Status
 
 **M0 (skeleton) complete.** The contract, state machine, store and CLI exist; no
-browser automation yet. Milestones M1-M7 are tracked in PLAN.md section 7.
+browser automation yet. Milestones M1-M8 are tracked in PLAN.md section 7.
 
 | Milestone | What | State |
 |---|---|---|
-| M0 | `models.py`, config, SQLite schema, CLI | done |
+| M0 | `models.py`, config, SQLite, CLI | done |
 | M1 | Ingestion + deterministic resolver | next |
-| M2 | Browser session + generic extractor | |
-| M3 | Filler + submit guards + Greenhouse | |
-| M4 | Candidate Context Agent + cache | |
-| M5 | Orchestrator loop + resumability | |
-| M6 | More ATS adapters (Workday last) | |
-| M7 | Review UX + vision fallback | |
+| M2 | Corpus harness (the measuring instrument) | |
+| M3 | Tier-1 extractor + label cascade, scored on the corpus | |
+| M4 | Interaction primitives, upload, submit guards | |
+| M5 | Context agent + cache + confidence routing | |
+| M6 | Orchestrator loop + forward classifier | |
+| M7 | Tier-2 vision fallback + site memory | |
+| M8 | HITL review UX + coverage dashboard | |
 
 ## Quick start
 
@@ -32,7 +33,8 @@ autofill status   # queue counts and answer-cache size
 pytest
 ```
 
-`autofill ingest | run | review | resume` exit with code 2 until their milestone lands.
+`autofill ingest | corpus | run | review | resume` exit with code 2 until their
+milestone lands.
 
 Browser support installs separately, so `autofill status` works on a machine with
 no browsers at all:
@@ -53,6 +55,13 @@ pip install -e ".[browser]" && playwright install chromium
 - **Guardrails are data, not code.** `config/never_answer.yaml` decides what the
   agent refuses to invent (salary, visa status, attestations, EEO fields). Add
   cases there, not as conditionals in the resolver.
+- **No vendor names in code.** There are no per-ATS adapters. Controls are
+  classified by behaviour (`WidgetKind`: native / aria / custom), and learned
+  page knowledge goes in the `site_memory` table instead of a hand-written
+  adapter. Vendor names belong in `tests/corpus/` as measurement only.
+- **Ambiguity stops the run.** `ForwardControl.AMBIGUOUS` is treated exactly like
+  a terminal submit. A wrongly stopped wizard costs one click; a wrongly
+  advanced one sends a real application.
 - **`autofill status` must never import Playwright.** There is a test for it.
 
 ## Personal data

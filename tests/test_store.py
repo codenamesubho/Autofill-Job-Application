@@ -51,6 +51,8 @@ def test_legal_transition_is_persisted(conn):
     repo.upsert(make_app())
     repo.set_status("job1", Status.OPENING)
     assert repo.get("job1").status == "OPENING"
+    repo.set_status("job1", Status.FORM_FOUND)
+    assert repo.get("job1").status == "FORM_FOUND"
 
 
 def test_illegal_transition_is_refused(conn):

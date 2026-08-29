@@ -15,6 +15,7 @@ from autofill.config import load_settings
 from autofill.orchestrator.states import Status
 from autofill.store import db
 from autofill.store.repo import AnswerCacheRepo, ApplicationRepo
+from autofill.store.site_memory import SiteMemoryRepo
 
 app = typer.Typer(
     add_completion=False,
@@ -74,6 +75,7 @@ def status() -> None:
         apps = ApplicationRepo(conn)
         counts = apps.counts_by_status()
         cache_size = AnswerCacheRepo(conn).size()
+        learned = SiteMemoryRepo(conn).size()
     finally:
         conn.close()
 
@@ -81,6 +83,7 @@ def status() -> None:
     typer.echo(f"db          {s.db_path}")
     typer.echo(f"review mode {s.review_mode}")
     typer.echo(f"cache       {cache_size} answers")
+    typer.echo(f"site memory {learned} pages")
     typer.echo(f"queue       {total} applications")
     if not total:
         typer.echo("            (empty - run 'autofill init', then 'autofill ingest')")
@@ -98,21 +101,31 @@ def ingest() -> None:
 
 
 @app.command()
+def corpus() -> None:
+    """Capture and replay offline form snapshots - the measuring instrument.
+
+    M2 comes before the extractor on purpose: without a labelled offline corpus,
+    "make the generic extractor better" is unfalsifiable.
+    """
+    _not_implemented("corpus", "M2")
+
+
+@app.command()
 def run() -> None:
     """Fill the queued applications. Stops before Submit, always."""
-    _not_implemented("run", "M3")
+    _not_implemented("run", "M4")
 
 
 @app.command()
 def review() -> None:
     """Walk the filled applications awaiting your review."""
-    _not_implemented("review", "M5")
+    _not_implemented("review", "M8")
 
 
 @app.command()
 def resume() -> None:
     """Re-fill interrupted applications from cached answers."""
-    _not_implemented("resume", "M5")
+    _not_implemented("resume", "M6")
 
 
 _PROFILE_TEMPLATE = """\

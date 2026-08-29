@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS applications (
     canonical_url TEXT,
     company       TEXT,
     title         TEXT,
-    ats           TEXT,
     status        TEXT NOT NULL DEFAULT 'PENDING',
     attempt       INTEGER NOT NULL DEFAULT 0,
     last_error    TEXT,
@@ -40,6 +39,7 @@ CREATE TABLE IF NOT EXISTS questions (
     field_id       TEXT NOT NULL,
     label          TEXT NOT NULL,
     type           TEXT NOT NULL,
+    widget         TEXT,
     answer         TEXT,
     source         TEXT,
     confidence     REAL,
@@ -52,9 +52,26 @@ CREATE TABLE IF NOT EXISTS answer_cache (
     question_hash TEXT PRIMARY KEY,
     label_sample  TEXT NOT NULL,
     type          TEXT NOT NULL,
+    jd_dependent  INTEGER NOT NULL DEFAULT 0,
     answer        TEXT NOT NULL,
     uses          INTEGER NOT NULL DEFAULT 0,
     last_used     TEXT
+);
+
+-- Learned knowledge about a page, produced by the generic machinery at runtime.
+-- This is what replaces hand-written per-vendor adapters: the second visit to a
+-- domain replays the strategies that worked, with no vendor code to maintain.
+CREATE TABLE IF NOT EXISTS site_memory (
+    domain                 TEXT NOT NULL,
+    page_fingerprint       TEXT NOT NULL,
+    apply_entry_selector   TEXT,
+    extraction_tier_used   INTEGER,
+    widget_strategies_json TEXT,
+    field_id_map_json      TEXT,
+    successes              INTEGER NOT NULL DEFAULT 0,
+    failures               INTEGER NOT NULL DEFAULT 0,
+    updated_at             TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (domain, page_fingerprint)
 );
 
 CREATE TABLE IF NOT EXISTS events (

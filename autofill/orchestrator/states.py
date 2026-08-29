@@ -1,6 +1,6 @@
 """The application status machine (PLAN.md section 4).
 
-PENDING -> OPENING -> DETECTED -> FILLING
+PENDING -> OPENING -> FORM_FOUND -> FILLING
         -> (NEEDS_HUMAN | BLOCKED_LOGIN | AWAITING_REVIEW)
         -> SUBMITTED_BY_HUMAN | SKIPPED | FAILED
 
@@ -16,7 +16,7 @@ from enum import Enum
 class Status(str, Enum):
     PENDING = "PENDING"
     OPENING = "OPENING"
-    DETECTED = "DETECTED"
+    FORM_FOUND = "FORM_FOUND"
     FILLING = "FILLING"
     NEEDS_HUMAN = "NEEDS_HUMAN"
     BLOCKED_LOGIN = "BLOCKED_LOGIN"
@@ -42,9 +42,9 @@ _TERMINAL: frozenset[Status] = frozenset(
 TRANSITIONS: dict[Status, frozenset[Status]] = {
     Status.PENDING: frozenset({Status.OPENING, Status.SKIPPED}),
     Status.OPENING: frozenset(
-        {Status.DETECTED, Status.BLOCKED_LOGIN, Status.FAILED, Status.SKIPPED}
+        {Status.FORM_FOUND, Status.BLOCKED_LOGIN, Status.FAILED, Status.SKIPPED}
     ),
-    Status.DETECTED: frozenset({Status.FILLING, Status.BLOCKED_LOGIN, Status.FAILED}),
+    Status.FORM_FOUND: frozenset({Status.FILLING, Status.BLOCKED_LOGIN, Status.FAILED}),
     Status.FILLING: frozenset(
         {
             Status.FILLING,  # re-entrant: each loop iteration

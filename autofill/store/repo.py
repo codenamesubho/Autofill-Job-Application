@@ -24,9 +24,9 @@ class ApplicationRepo:
             self.conn.execute(
                 """
                 INSERT INTO applications
-                    (id, job_url, canonical_url, company, title, ats, status,
+                    (id, job_url, canonical_url, company, title, status,
                      attempt, last_error, artifact_dir)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(canonical_url) DO NOTHING
                 """,
                 (
@@ -35,7 +35,6 @@ class ApplicationRepo:
                     app.canonical_url or app.job_url,
                     app.company,
                     app.title,
-                    app.ats,
                     app.status,
                     app.attempt,
                     app.last_error,
@@ -108,17 +107,31 @@ class AnswerCacheRepo:
             )
         return row["answer"]
 
-    def put(self, question_hash: str, label_sample: str, type_: str, answer: str) -> None:
+    def put(
+        self,
+        question_hash: str,
+        label_sample: str,
+        type_: str,
+        answer: str,
+        *,
+        jd_dependent: bool = False,
+    ) -> None:
+        """Store an answer.
+
+        `jd_dependent` is recorded, not just used in the key, so the cache can be
+        pruned per-job later - a stale "why this company" answer is worse than a
+        miss.
+        """
         with self.conn:
             self.conn.execute(
                 """
-                INSERT INTO answer_cache(question_hash, label_sample, type, answer,
-                                         uses, last_used)
-                VALUES (?, ?, ?, ?, 0, datetime('now'))
+                INSERT INTO answer_cache(question_hash, label_sample, type,
+                                         jd_dependent, answer, uses, last_used)
+                VALUES (?, ?, ?, ?, ?, 0, datetime('now'))
                 ON CONFLICT(question_hash) DO UPDATE SET
                     answer = excluded.answer, last_used = datetime('now')
                 """,
-                (question_hash, label_sample, type_, answer),
+                (question_hash, label_sample, type_, int(jd_dependent), answer),
             )
 
     def size(self) -> int:
