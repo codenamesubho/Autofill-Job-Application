@@ -76,8 +76,8 @@ different index, and do not look for another way to trigger the same action.
 _RESIDUAL_TASK_TRANSCRIBE = """
 For each of the following fields, enter or select EXACTLY the given value —
 do not invent, guess, paraphrase, or modify it. If a field is a dropdown/
-combobox, open it and choose the option matching the given value; if none
-matches closely, leave that field alone and call done.
+combobox, you can type the given value or open it and choose the option matching the given value; if none
+matches closely, leave that field alone and call done. 
 
 {items}
 """
