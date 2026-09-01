@@ -37,3 +37,5 @@ def print_report(result: RunResult, path: Path) -> None:
         if snap.error:
             print(f"{'':<60} error: {snap.error}")
     print(f"\nArtifact: {path}")
+    print("Browser left open — close it yourself when done (it will block a "
+          "later run against the same --profile-dir until you do).")

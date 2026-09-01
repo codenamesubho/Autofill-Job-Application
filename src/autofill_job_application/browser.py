@@ -43,6 +43,18 @@ def build_profile(
         # the agent's page representation stops at the frame boundary and the
         # form is invisible to it.
         "cross_origin_iframes": True,
+        # Without this, browser_use.Agent.run() kills the browser session on
+        # its own completion (agent/service.py: "Only close browser if
+        # keep_alive is False") — fatal for every caller here, since a session
+        # is always shared across more than one Agent.run() call:
+        # autofill-snapshot reuses one session across every job URL in the
+        # batch, and autofill-fill constructs a fresh Agent for phase 1 and
+        # then again for each residual-turn batch against the very same
+        # session. No individual Agent.run() call should be allowed to kill
+        # the session out from under a caller still using it. Nothing in this
+        # project calls session.kill() at all, in fact — closing the browser
+        # is left entirely to the user, on purpose (see cli.py/filling/cli.py).
+        "keep_alive": True,
     }
     executable = resolve_chrome(chrome_path)
     if executable:

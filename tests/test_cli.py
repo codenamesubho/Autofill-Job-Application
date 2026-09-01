@@ -40,16 +40,28 @@ def test_parser_defaults():
     assert args.out == "./snapshots"
     assert args.headful is False
     assert args.max_steps == 25
+    assert args.job_timeout is None
     assert "chrome-profile" in args.profile_dir
+    # model/provider come from the environment unless given explicitly
+    assert args.model is None
+    assert args.provider is None
+
+
+def test_provider_choices_are_validated():
+    args = build_parser().parse_args(["urls.txt", "--provider", "openai"])
+    assert args.provider == "openai"
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["urls.txt", "--provider", "hal9000"])
 
 
 def test_parser_flags():
     args = build_parser().parse_args(
-        ["urls.txt", "--headful", "--max-steps", "40", "--out", "/tmp/x"]
+        ["urls.txt", "--headful", "--max-steps", "40", "--out", "/tmp/x", "--job-timeout", "120"]
     )
     assert args.headful is True
     assert args.max_steps == 40
     assert args.out == "/tmp/x"
+    assert args.job_timeout == 120.0
 
 
 def test_urls_file_is_required():

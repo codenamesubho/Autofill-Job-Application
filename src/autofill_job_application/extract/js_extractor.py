@@ -216,6 +216,10 @@ EXTRACT_JS = r"""
         currentValue: (type === 'checkbox' || type === 'radio')
           ? (el.checked ? 'checked' : null)
           : (el.value || null),
+        // Raw HTML value attribute, independent of checked state. This is what
+        // a fill step must match against to select a specific radio option —
+        // currentValue on a radio means "is it checked", never "what value".
+        valueAttr: (el.value != null && el.value !== '') ? el.value : null,
         visible: vis,
       });
     }
@@ -287,6 +291,7 @@ def _to_question(raw: dict, frame_url: str, target_id: str | None) -> Question:
             dom_path=raw.get("domPath"),
             element_id=raw.get("elementId"),
             name_attr=raw.get("nameAttr"),
+            value_attr=raw.get("valueAttr"),
         ),
         label=raw.get("label") or "",
         label_source=label_source,
@@ -330,9 +335,17 @@ def collapse_radio_groups(questions: list[Question]) -> list[Question]:
                 required=any(m.required for m in members),
                 options=[
                     QuestionOption(
-                        value=m.ref.element_id or m.label,
+                        # Real HTML value first — this is what a selector like
+                        # input[name=X][value=Y] must match. element_id/label
+                        # are only a last resort for a radio with no value
+                        # attribute at all (rare; browsers default value="on").
+                        value=m.ref.value_attr or m.ref.element_id or m.label,
                         label=m.label,
                         selected=m.current_value == "checked",
+                        # Some ATS forms give every option in a group the same
+                        # generic value ("on"), making name+value ambiguous —
+                        # this per-option selector is the fallback for that case.
+                        option_selector=m.ref.css_selector,
                     )
                     for m in members
                 ],

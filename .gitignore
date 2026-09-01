@@ -221,3 +221,6 @@ __marimo__/
 .venv/
 .env
 snapshots/
+answers/
+fills/
+about-me.md

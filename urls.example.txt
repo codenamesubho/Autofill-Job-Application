@@ -1,2 +1,2 @@
 # One job URL per line. Blank lines and # comments are ignored.
-https://job-boards.greenhouse.io/gitlab/jobs/8705017002   # trailing comments work too
+https://job-boards.greenhouse.io/pingidentity/jobs/8732378002   # trailing comments work too

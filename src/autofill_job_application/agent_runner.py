@@ -3,22 +3,31 @@
 The agent navigates, finds the Apply control, opens the form and reports the
 questions as validated structured output.
 
-Safety note. An autonomous agent chooses its own clicks, so safety cannot live in
-a gate the agent calls — it lives in what the agent is *capable of*. `EXCLUDED`
+Safety note — this describes the SNAPSHOT agent (`build_tools()`, no args).
+An autonomous agent chooses its own clicks, so safety cannot live in a gate the
+agent calls — it lives in what the agent is *capable of*. `EXCLUDED_ACTIONS`
 removes every write-capable action from the registry before the agent is built,
 so there is no tool by which it can type, upload, choose, or press a key. A form
 it cannot fill is a form it cannot meaningfully submit; the CDP guard then blocks
 the submission act itself.
+
+`build_tools(allow_fill=True)` — used only by `filling/runner.py`'s residual
+agent — is a *different* safety model, not a weaker version of this one: it
+re-enables `input`/`select_dropdown` only, and safety instead comes from a
+click gate (`filling/click_gate.py`, wired in by `filling/tools.py`) plus this
+same CDP guard as an independent second layer. See CLAUDE.md for why two
+different models coexist rather than one being watered down into the other.
 """
 
 from __future__ import annotations
 
-import os
+import asyncio
 from datetime import datetime, timezone
 
 from browser_use import Agent, Tools
 
 from .guard import guard_status, inject_into_all_targets
+from .llm import LLMConfig, build_llm, resolve_config
 from .models import (
     AgentFormSnapshot,
     JobSnapshot,
@@ -40,6 +49,22 @@ EXCLUDED_ACTIONS = [
     "evaluate",  # arbitrary JS, could call form.submit()
     "search",  # web search; irrelevant and a distraction
 ]
+
+#: The only two actions `build_tools(allow_fill=True)` ever re-enables, for the
+#: filling residual agent. Deliberately NOT `send_keys` (Enter can submit a
+#: form), NOT `evaluate` (arbitrary JS), NOT `upload_file` (handled
+#: deterministically by filling.dom_writer.write_file instead, from a
+#: pre-approved local path — never from the LLM).
+FILL_ACTIONS = ["input", "select_dropdown"]
+
+#: Wall-clock cap on a single job, independent of --max-steps. A model that
+#: keeps failing to produce valid structured output can retry for several
+#: agent steps before browser-use's own consecutive-failure cap kicks in, and
+#: each of those steps can itself be slow (large page context, provider-side
+#: retries with backoff) — without a wall-clock cap, one bad URL can stall the
+#: whole batch. On timeout the job is recorded as failed and the batch moves on,
+#: same as any other per-job error.
+DEFAULT_JOB_TIMEOUT = 600.0
 
 #: Kept deliberately: the agent still needs to move and to look.
 EXPECTED_KEPT = [
@@ -97,26 +122,17 @@ _OUTCOME_MAP = {
 }
 
 
-def build_tools() -> Tools:
-    """Registry with every write-capable action removed."""
-    return Tools(exclude_actions=EXCLUDED_ACTIONS)
+def build_tools(*, allow_fill: bool = False) -> Tools:
+    """Registry with every write-capable action removed.
 
-
-def build_llm(model: str = "claude-opus-5"):
-    """Construct the chat model, or raise a useful error if no key is present.
-
-    Deferred import: `cli --help` and the offline test suite must not require an
-    API key or an SDK client to be constructible.
+    `allow_fill=True` re-enables only `FILL_ACTIONS` — used exclusively by
+    `filling/runner.py`'s residual agent, never by `snapshot_one` below, whose
+    call site is unchanged (`build_tools()`, no args). See this module's
+    docstring for the safety model that replaces "no write tools" when this is
+    True.
     """
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY is not set. The agent needs an LLM for every run.\n"
-            "Put it in a .env file next to pyproject.toml, or export it:\n"
-            "    export ANTHROPIC_API_KEY=sk-ant-..."
-        )
-    from browser_use import ChatAnthropic
-
-    return ChatAnthropic(model=model)
+    excluded = [a for a in EXCLUDED_ACTIONS if not (allow_fill and a in FILL_ACTIONS)]
+    return Tools(exclude_actions=excluded)
 
 
 def _now() -> str:
@@ -129,12 +145,14 @@ async def snapshot_one(
     *,
     llm=None,
     max_steps: int = 25,
-    model: str = "claude-opus-5",
+    config: LLMConfig | None = None,
+    job_timeout: float = DEFAULT_JOB_TIMEOUT,
 ) -> JobSnapshot:
     """Catalogue one job URL. Never raises — a failure becomes an artifact entry."""
     snap = JobSnapshot(input_url=url, hops=[url], timestamp=_now())
     try:
-        llm = llm or build_llm(model)
+        config = config or resolve_config()
+        llm = llm or build_llm(config)
         agent = Agent(
             task=TASK_TEMPLATE.format(url=url),
             llm=llm,
@@ -147,7 +165,17 @@ async def snapshot_one(
             enable_planning=False,
             calculate_cost=True,
         )
-        history = await agent.run(max_steps=max_steps)
+        try:
+            history = await asyncio.wait_for(
+                agent.run(max_steps=max_steps), timeout=job_timeout
+            )
+        except TimeoutError:
+            snap.outcome = Outcome.NAVIGATION_ERROR
+            snap.error = (
+                f"job timed out after {job_timeout:.0f}s without finishing "
+                "(stuck agent step or unresponsive provider); moved on to the next URL"
+            )
+            return snap
 
         # A cross-origin form frame is a new CDP target and does not inherit the
         # parent's init script, so re-arm after the agent has navigated.
@@ -168,7 +196,8 @@ async def snapshot_one(
         snap.questions = [agent_question_to_question(q) for q in result.questions]
         snap.tier2 = {
             "ran": True,
-            "model": model,
+            "provider": config.provider,
+            "model": config.model,
             "steps": len(history.history),
             "notes": result.notes,
         }

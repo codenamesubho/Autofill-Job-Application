@@ -5,18 +5,28 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "autofill-job-application"
 version = "0.1.0"
-description = "Navigates to job applications and snapshots their questions. Never submits."
+description = "Navigates to job applications, snapshots and fills their questions. Never submits."
 requires-python = ">=3.11"
 dependencies = [
-    "browser-use>=0.13.8",
+    # Pinned narrower than the rest of this project's deps: filling/tools.py
+    # re-registers browser_use.Tools' 'click' action via a non-public internal
+    # (Tools._register_click_action) to wire in the phase-2 click gate. That
+    # mechanism isn't part of browser-use's public API and could change on a
+    # minor release; tests/test_filling_click_gate_wiring.py fails loudly if
+    # it ever does, but the pin buys a warning before that happens instead of
+    # a silent behavior change.
+    "browser-use>=0.13.8,<0.14",
     "pydantic>=2.7",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.2", "pytest-asyncio>=0.23"]
+litellm = ["litellm>=1.40"]
 
 [project.scripts]
 autofill-snapshot = "autofill_job_application.cli:main"
+autofill-answer = "autofill_job_application.answering.cli:main"
+autofill-fill = "autofill_job_application.filling.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

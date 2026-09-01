@@ -1,8 +1,9 @@
 """Live end-to-end: one real job URL must reach an open form with questions.
 
-Needs real Chrome AND an ANTHROPIC_API_KEY. Skipped otherwise.
+Needs real Chrome AND an LLM key. Skipped otherwise.
 
-    export ANTHROPIC_API_KEY=sk-ant-...
+    export AUTOFILL_LLM_API_KEY=sk-or-v1-...
+    export AUTOFILL_LLM_MODEL=anthropic/claude-opus-5
     pytest -m live tests/live/test_end_to_end.py
 
 Not run during development — no key was available in that session.
@@ -20,7 +21,7 @@ pytestmark = [
     pytest.mark.live,
     pytest.mark.asyncio,
     pytest.mark.skipif(
-        not os.environ.get("ANTHROPIC_API_KEY"),
+        not os.environ.get("AUTOFILL_LLM_API_KEY"),
         reason="agent version needs an LLM key for every run",
     ),
 ]

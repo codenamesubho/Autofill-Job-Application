@@ -68,12 +68,22 @@ class ElementRef(BaseModel):
     dom_path: str | None = None
     element_id: str | None = None
     name_attr: str | None = None
+    #: The element's raw HTML `value` attribute (as opposed to its current UI
+    #: state). Needed to fill a radio/checkbox by value rather than by label —
+    #: `current_value` on a radio/checkbox Question means "is it checked", not
+    #: "what is its value", so this is the only place the real value lives.
+    value_attr: str | None = None
 
 
 class QuestionOption(BaseModel):
     value: str
     label: str
     selected: bool = False
+    #: Fallback selector for this specific option (radio button, <option> element).
+    #: Some ATS forms give every option in a radio group the same generic
+    #: `value` (e.g. "on"), which makes name+value ambiguous; a real per-option
+    #: selector, captured at extraction time, is the only reliable fallback.
+    option_selector: str | None = None
 
 
 class Question(BaseModel):
@@ -118,7 +128,7 @@ class JobSnapshot(BaseModel):
     outcome: Outcome = Outcome.NAVIGATION_ERROR
     hops: list[str] = Field(default_factory=list)
     questions: list[Question] = Field(default_factory=list)
-    #: {"skipped": "no ANTHROPIC_API_KEY"} or {"ran": True, "steps": 12, ...}
+    #: {"ran": True, "provider": "openrouter", "model": ..., "steps": 12}
     tier2: dict = Field(default_factory=dict)
     #: Submit-guard readout: {"installed": bool, "blocked": int, "reasons": [...]}.
     #: A non-zero `blocked` means something actually attempted a submission.

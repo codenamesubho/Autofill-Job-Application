@@ -2,5 +2,10 @@
   "includeCoAuthoredBy": false,
   "worktree": {
     "bgIsolation": "none"
+  },
+  "permissions": {
+    "deny": [
+      "Read(./.env)"
+    ]
   }
 }
